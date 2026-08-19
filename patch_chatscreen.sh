@@ -1,0 +1,3 @@
+sed -i 's/isLocalModel: Boolean = true,/isLocalModel: Boolean = true,\n    isFlashTaskMode: Boolean = false,\n    onFlashTaskModeChange: (Boolean) -> Unit = {},/g' app/src/main/java/io/agents/pokeclaw/ui/chat/ChatScreen.kt
+sed -i 's/isTaskMode: Boolean,/isTaskMode: Boolean,\n    isFlashTaskMode: Boolean,\n    onFlashTaskModeChange: (Boolean) -> Unit,/g' app/src/main/java/io/agents/pokeclaw/ui/chat/ChatScreen.kt
+sed -i 's/isTaskMode = isTaskMode,/isTaskMode = isTaskMode,\n                            isFlashTaskMode = isFlashTaskMode,\n                            onFlashTaskModeChange = onFlashTaskModeChange,/g' app/src/main/java/io/agents/pokeclaw/ui/chat/ChatScreen.kt

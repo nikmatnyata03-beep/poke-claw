@@ -1,0 +1,1 @@
+sed -i 's/val response = chatModel.chat(request)/val response = chatModel.chat(request)\n            response.tokenUsage()?.totalTokenCount()?.let { io.agents.pokeclaw.utils.KVUtils.addAutoReplyTokens(it) }/g' app/src/main/java/io/agents/pokeclaw/agent/llm/LlmSessionManager.kt

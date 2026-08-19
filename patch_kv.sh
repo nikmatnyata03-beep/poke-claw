@@ -1,0 +1,1 @@
+sed -i 's/fun isGuideShown()/const val KEY_FLASH_TASK_MODE = "KEY_FLASH_TASK_MODE"\n    fun isFlashTaskMode(): Boolean = getBoolean(KEY_FLASH_TASK_MODE, false)\n    fun setFlashTaskMode(enabled: Boolean) { putBoolean(KEY_FLASH_TASK_MODE, enabled) }\n\n    fun isGuideShown()/g' app/src/main/java/io/agents/pokeclaw/utils/KVUtils.kt

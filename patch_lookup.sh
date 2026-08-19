@@ -1,0 +1,1 @@
+sed -i '/if (UiActionMatchUtils.findBestSearchField(root) != null) return true;/a \        if (UiActionMatchUtils.findBestSearchAction(root) != null) return true;' app/src/main/java/io/agents/pokeclaw/utils/ContactListUiUtils.java

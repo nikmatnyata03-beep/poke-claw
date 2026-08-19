@@ -1,0 +1,2 @@
+sed -i 's/val _isFlashTaskMode = kotlinx.coroutines.flow.MutableStateFlow(io.agents.pokeclaw.utils.KVUtils.isFlashTaskMode())/private val _isFlashTaskMode = kotlinx.coroutines.flow.MutableStateFlow(io.agents.pokeclaw.utils.KVUtils.isFlashTaskMode())/g' app/src/main/java/io/agents/pokeclaw/AppViewModel.kt
+sed -i 's/val isFlashTaskMode = _isFlashTaskMode/val isFlashTaskMode: kotlinx.coroutines.flow.StateFlow<Boolean> = kotlinx.coroutines.flow.asStateFlow(_isFlashTaskMode)/g' app/src/main/java/io/agents/pokeclaw/AppViewModel.kt

@@ -1,0 +1,2 @@
+sed -i 's/tasks: List<String>,/tasks: List<String>,\n    tokens: Int = 0,/g' app/src/main/java/io/agents/pokeclaw/ui/chat/ChatScreen.kt
+sed -i 's/modifier = Modifier.weight(1f),/modifier = Modifier.weight(1f),\n                )\n                Text(\n                    text = "$tokens tokens",\n                    color = colors.textSecondary,\n                    fontSize = 11.sp,\n                    modifier = Modifier.padding(end = 8.dp),\n                )/g' app/src/main/java/io/agents/pokeclaw/ui/chat/ChatScreen.kt

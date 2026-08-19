@@ -1,0 +1,1 @@
+sed -i '/case "wa business": return "com.whatsapp.w4b";/a \            case "whatsapp bisnis": return "com.whatsapp.w4b";\n            case "wa bisnis": return "com.whatsapp.w4b";' app/src/main/java/io/agents/pokeclaw/tool/impl/OpenAppTool.java

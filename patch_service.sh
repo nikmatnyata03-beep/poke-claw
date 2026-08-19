@@ -1,0 +1,1 @@
+sed -i 's/String nodeId = "n" + nodeCounter.incrementAndGet();/String stableId = generateStableId(node);\n            String nodeId = "n" + stableId;/g' app/src/main/java/io/agents/pokeclaw/service/ClawAccessibilityService.java

@@ -1,0 +1,1 @@
+sed -i 's/fun toggleFlashTaskMode() {/fun setFlashTaskMode(flash: Boolean) {\n        _isFlashTaskMode.value = flash\n        io.agents.pokeclaw.utils.KVUtils.setFlashTaskMode(flash)\n    }\n\n    fun toggleFlashTaskMode() {/g' app/src/main/java/io/agents/pokeclaw/AppViewModel.kt
