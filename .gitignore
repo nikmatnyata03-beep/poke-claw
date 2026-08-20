@@ -1,24 +1,69 @@
+```
+# Compiled and build artifacts
+*.class
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.exe
+*.out
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
+
+# Build outputs
+build/
+dist/
+out/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
 .env
-*.iml
-.gradle
-/local.properties
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# OS generated files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-*.jks
-/.claude/
-/.idea/
-*.mp4
-!docs/*.mp4
+Thumbs.db
 
-# Build fingerprint (auto-generated)
-app/src/main/assets/.pcfp
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Claude Code local session state (not for git)
-CLAUDE.local.md
-thoughts/
-.claudeignore
-/.kotlin/
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+```

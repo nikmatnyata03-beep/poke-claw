@@ -5,7 +5,10 @@ package io.agents.pokeclaw.ui.chat
 
 import io.agents.pokeclaw.AppCapabilityCoordinator
 import io.agents.pokeclaw.ServiceBindingState
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper

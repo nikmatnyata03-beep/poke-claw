@@ -42,6 +42,7 @@ object FloatingCircleManager {
         IDLE,           // waiting for task (default)
         TASK_NOTIFY,    // task notification received (pill expanded)
         RUNNING,        // task running
+        EXPANDED,       // iOS-style expanded dynamic island with options
         SUCCESS,        // task completed
         ERROR           // task failed
     }
@@ -112,14 +113,20 @@ object FloatingCircleManager {
                             circleWidthPx = root.layoutParams?.width ?: -1
                         }
                     }
-                    // Click events: tap to stop if running, otherwise bring app to foreground
+                    // Click events: tap to expand when running, otherwise bring app to foreground
                     view?.setOnClickListener {
                         if (currentState == State.RUNNING || currentState == State.TASK_NOTIFY) {
-                            onStopTask()
+                            // Expand to show options instead of stopping immediately
+                            setState(State.EXPANDED)
+                        } else if (currentState == State.EXPANDED) {
+                            // Already expanded, collapse back to running
+                            setState(State.RUNNING)
                         } else {
                             onFloatClick()
                         }
                     }
+                    // Setup click listeners for expanded state buttons
+                    setupExpandedViewListeners(view)
                     // Initialize state
                     updateStateView(view, currentState)
                     // Detect position after layout to prevent the bubble from getting stuck off-screen
@@ -313,6 +320,7 @@ object FloatingCircleManager {
         val cardIdle = view.findViewById<View>(R.id.cardIdle)
         val cardTaskNotify = view.findViewById<View>(R.id.cardTaskNotify)
         val cardRunning = view.findViewById<View>(R.id.cardRunning)
+        val cardExpanded = view.findViewById<View>(R.id.cardExpanded)
         val cardSuccess = view.findViewById<View>(R.id.cardSuccess)
         val cardError = view.findViewById<View>(R.id.cardError)
 
@@ -320,6 +328,7 @@ object FloatingCircleManager {
         cardIdle?.visibility = View.GONE
         cardTaskNotify?.visibility = View.GONE
         cardRunning?.visibility = View.GONE
+        cardExpanded?.visibility = View.GONE
         cardSuccess?.visibility = View.GONE
         cardError?.visibility = View.GONE
 
@@ -355,6 +364,20 @@ object FloatingCircleManager {
                 // Update token status text
                 val tvStatus = view.findViewById<TextView>(R.id.tvTokenStatus)
                 tvStatus?.text = "Step ${currentRound}"
+            }
+            State.EXPANDED -> {
+                cancelNotifyCollapse()
+                // Show expanded iOS-style dynamic island
+                cardExpanded?.visibility = View.VISIBLE
+                setFloatRootWidth(view, WindowManager.LayoutParams.WRAP_CONTENT)
+                
+                // Update expanded view content
+                val tvCurrentTask = view.findViewById<TextView>(R.id.tvCurrentTask)
+                val tvStepInfo = view.findViewById<TextView>(R.id.tvStepInfo)
+                val app = appRef ?: return
+                
+                tvCurrentTask?.text = if (pendingTaskText.isNotEmpty()) pendingTaskText else "Processing..."
+                tvStepInfo?.text = "Step ${currentRound} | ${getTokenDisplay()} | ${getCostDisplay()}"
             }
             State.SUCCESS -> {
                 cancelNotifyCollapse()
@@ -506,4 +529,61 @@ object FloatingCircleManager {
      */
     var onFloatClick: () -> Unit = {}
     var onStopTask: () -> Unit = {}
+    
+    /**
+     * Callbacks for expanded state actions
+     */
+    var onHideIsland: () -> Unit = {}
+    var onContinueWithSpeech: () -> Unit = {}
+    var onContinueWithText: () -> Unit = {}
+    
+    /**
+     * Setup click listeners for expanded view buttons
+     */
+    private fun setupExpandedViewListeners(view: View?) {
+        if (view == null) return
+        
+        // Close button - collapse back to running state
+        view.findViewById<View>(R.id.btnCloseExpand)?.setOnClickListener {
+            setState(State.RUNNING)
+        }
+        
+        // Hide Dynamic Island option
+        view.findViewById<View>(R.id.btnHideIsland)?.setOnClickListener {
+            onHideIsland()
+            setState(State.IDLE)
+        }
+        
+        // Continue with Speech option
+        view.findViewById<View>(R.id.btnContinueSpeech)?.setOnClickListener {
+            onContinueWithSpeech()
+        }
+        
+        // Continue with Text option
+        view.findViewById<View>(R.id.btnContinueText)?.setOnClickListener {
+            onContinueWithText()
+        }
+        
+        // Stop Task option
+        view.findViewById<View>(R.id.btnStopTask)?.setOnClickListener {
+            onStopTask()
+            setState(State.IDLE)
+        }
+    }
+    
+    /**
+     * Get formatted token display string
+     */
+    private fun getTokenDisplay(): String {
+        // This would need to be updated with actual token tracking
+        return "0K"
+    }
+    
+    /**
+     * Get formatted cost display string
+     */
+    private fun getCostDisplay(): String {
+        // This would need to be updated with actual cost tracking
+        return "$0.00"
+    }
 }
