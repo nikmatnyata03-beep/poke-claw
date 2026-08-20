@@ -11,10 +11,9 @@ import android.text.format.DateUtils
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -37,37 +36,60 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import io.agents.pokeclaw.R
 import io.agents.pokeclaw.agent.skill.Skill
 import io.agents.pokeclaw.agent.skill.SkillCategory
 import io.agents.pokeclaw.agent.skill.SkillRegistry
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import io.agents.pokeclaw.utils.XLog
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * PokeClaw Chat Screen — Jetpack Compose
- * Inspired by WhatsApp/Telegram/Slack dark theme
+ * iOS 16+ Inspired: Full Animation, Motion Graphics, Smooth UI/UX
+ * - Fluid spring animations throughout
+ * - Glassmorphism effects
+ * - Parallax scrolling
+ * - Gesture-based interactions
+ * - Haptic feedback
+ * - Morphing transitions
  */
 
 // ======================== THEME COLORS ========================
@@ -106,6 +128,46 @@ val AbyssDark = PokeclawColors(
     inputBorder = Color(0xFF1E293B),
 )
 
+// iOS-style spring animation specs
+val iosSpringSpec = spring<Float>(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.75f)
+val iosBouncySpring = spring<Float>(stiffness = Spring.StiffnessLow, dampingRatio = 0.6f)
+val iosFastSpring = spring<IntOffset>(stiffness = Spring.StiffnessHigh, dampingRatio = 0.8f)
+
+// Glassmorphism gradient for surfaces
+fun glassGradient(colors: PokeclawColors, alpha: Float = 0.7f): Brush {
+    return Brush.verticalGradient(
+        colors = listOf(
+            colors.surface.copy(alpha = alpha * 0.9f),
+            colors.surface.copy(alpha = alpha * 0.7f),
+            colors.surface.copy(alpha = alpha * 0.85f)
+        )
+    )
+}
+
+// Animated gradient background
+@Composable
+fun animatedGradientBrush(colors: PokeclawColors): Brush {
+    val infiniteTransition = rememberInfiniteTransition(label = "gradient")
+    val hueShift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "hueShift"
+    )
+    return Brush.radialGradient(
+        colors = listOf(
+            colors.accent.copy(alpha = 0.15f),
+            colors.background.copy(alpha = 0.8f),
+            colors.background
+        ),
+        center = androidx.compose.ui.geometry.Offset(hueShift / 360f * 1000f, 500f),
+        radius = 800f
+    )
+}
+
 private fun Modifier.dismissKeyboardOnBackgroundTap(onDismissKeyboard: () -> Unit): Modifier =
     pointerInput(onDismissKeyboard) {
         awaitEachGesture {
@@ -116,6 +178,69 @@ private fun Modifier.dismissKeyboardOnBackgroundTap(onDismissKeyboard: () -> Uni
             }
         }
     }
+
+// iOS-style scale and fade animation for appearing items
+@Composable
+fun <T> AnimateItemAppearance(
+    item: T,
+    key: Any = item,
+    content: @Composable (animateAlpha: Float, animateScale: Float) -> Unit
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(key) {
+        isVisible = true
+    }
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+        label = "alpha"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.92f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = 0.8f),
+        label = "scale"
+    )
+    
+    content(alpha, scale)
+}
+
+// iOS-style animated toggle button
+@Composable
+private fun AnimatedToggle(
+    selected: Boolean,
+    onClick: () -> Unit,
+    text: String,
+    colors: PokeclawColors,
+) {
+    val haptic = LocalHapticFeedback.current
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.05f else 1f,
+        animationSpec = iosSpringSpec,
+        label = "scale"
+    )
+    
+    Surface(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            onClick()
+        },
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) colors.aiBubble else Color.Transparent,
+        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, colors.aiBubbleBorder) else null,
+        modifier = Modifier
+            .scale(scale)
+            .animateContentSize(animationSpec = iosSpringSpec),
+    ) {
+        Text(
+            text,
+            fontSize = 12.sp,
+            color = if (selected) colors.accent else colors.textTertiary,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+        )
+    }
+}
 
 // ======================== MAIN SCREEN ========================
 
@@ -411,111 +536,157 @@ private fun ChatTopBar(
         sessionTokens < 25000 -> Color(0xFFFBBF24) // amber
         else -> Color(0xFFF87171) // soft red
     }
+    
+    val haptic = LocalHapticFeedback.current
 
-    Column {
+    Column(
+        modifier = Modifier.animateContentSize(animationSpec = iosSpringSpec)
+    ) {
         var showModelMenu by remember { mutableStateOf(false) }
 
-        TopAppBar(
-            title = {
-                Text(
-                    buildAnnotatedString {
-                        append("Poke")
-                        withStyle(SpanStyle(color = colors.accent)) {
-                            append("Claw")
-                        }
-                    },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = colors.textPrimary,
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onMenuClick) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu")
-                }
-            },
-            actions = {
-                // Local/Cloud toggle — two plain buttons, no container
-                Surface(
-                    onClick = { onTabChange("local") },
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (selectedTab == "local") colors.aiBubble else Color.Transparent,
-                    border = if (selectedTab == "local") androidx.compose.foundation.BorderStroke(1.dp, colors.aiBubbleBorder) else null,
-                ) {
-                    Text(
-                        "Local",
-                        fontSize = 12.sp,
-                        color = if (selectedTab == "local") colors.accent else colors.textTertiary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
-                Surface(
-                    onClick = { onTabChange("cloud") },
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (selectedTab == "cloud") colors.aiBubble else Color.Transparent,
-                    border = if (selectedTab == "cloud") androidx.compose.foundation.BorderStroke(1.dp, colors.aiBubbleBorder) else null,
-                ) {
-                    Text(
-                        "Cloud",
-                        fontSize = 12.sp,
-                        color = if (selectedTab == "cloud") colors.accent else colors.textTertiary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                    )
-                }
-                IconButton(onClick = onSettings) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colors.surface,
-                titleContentColor = colors.textPrimary,
-                navigationIconContentColor = colors.textPrimary,
-                actionIconContentColor = colors.textSecondary,
-            ),
-        )
-
-        // Model status + dropdown — filtered by selected tab
-        Box {
-        Row(
+        // iOS-style glassmorphic top bar with blur effect
+        Surface(
+            color = colors.surface.copy(alpha = 0.85f),
+            tonalElevation = 8.dp,
             modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.surface)
-                .clickable { showModelMenu = true }
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .graphicsLayer {
+                    shadowElevation = 12.dp
+                    ambientShadowAlpha = 0.3f
+                    spotShadowAlpha = 0.4f
+                }
         ) {
-            Text(
-                text = modelStatus,
-                fontSize = 11.sp,
-                color = colors.textTertiary,
+            TopAppBar(
+                title = {
+                    AnimatedContent(
+                        targetState = "PokeClaw",
+                        transitionSpec = {
+                            slideInHorizontally(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+                                togetherWith
+                            slideOutHorizontally(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+                        },
+                        label = "title"
+                    ) { title ->
+                        Text(
+                            buildAnnotatedString {
+                                append("Poke")
+                                withStyle(SpanStyle(color = colors.accent)) {
+                                    append("Claw")
+                                }
+                            },
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = colors.textPrimary,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onMenuClick()
+                        },
+                        modifier = Modifier.scale(1f).animateContentSize(animationSpec = iosSpringSpec)
+                    ) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = colors.textPrimary)
+                    }
+                },
+                actions = {
+                    // Local/Cloud toggle with animated spring transition
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AnimatedToggle(
+                            selected = selectedTab == "local",
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                onTabChange("local")
+                            },
+                            text = "Local",
+                            colors = colors,
+                        )
+                        AnimatedToggle(
+                            selected = selectedTab == "cloud",
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                                onTabChange("cloud")
+                            },
+                            text = "Cloud",
+                            colors = colors,
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSettings()
+                        },
+                        modifier = Modifier.scale(1f).animateContentSize(animationSpec = iosSpringSpec)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = colors.textSecondary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = colors.textPrimary,
+                    navigationIconContentColor = colors.textPrimary,
+                    actionIconContentColor = colors.textSecondary,
+                ),
             )
-            Spacer(Modifier.width(4.dp))
-            Icon(
-                Icons.Default.UnfoldMore,
-                contentDescription = "Switch model",
-                tint = colors.textTertiary,
-                modifier = Modifier.size(12.dp),
-            )
-            if (sessionTokens > 0 && !isLocalModel) {
-                val formattedTokens = if (sessionTokens >= 1000) {
-                    String.format("%.1fK", sessionTokens / 1000.0)
-                } else {
-                    "$sessionTokens"
-                }
-                val costText = if (sessionCost < 0.01) "< $0.01" else "$${String.format("%.2f", sessionCost)}"
-                val tokenSuffix = if (!isLocalModel && sessionCost > 0) {
-                    " · $formattedTokens tokens · $costText"
-                } else {
-                    " · $formattedTokens tokens"
-                }
-                Text(
-                    text = tokenSuffix,
-                    fontSize = 11.sp,
-                    color = tokenColor,
-                )
-            }
         }
+
+        // Model status + dropdown — filtered by selected tab with glassmorphism
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(200)) + slideOutVertically(animationSpec = tween(200)),
+        ) {
+            Box {
+                Surface(
+                    color = colors.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showModelMenu = true }
+                        .animateContentSize(animationSpec = iosSpringSpec)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = modelStatus,
+                            fontSize = 11.sp,
+                            color = colors.textTertiary,
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            Icons.Default.UnfoldMore,
+                            contentDescription = "Switch model",
+                            tint = colors.textTertiary,
+                            modifier = Modifier.size(12.dp),
+                        )
+                        if (sessionTokens > 0 && !isLocalModel) {
+                            val formattedTokens = if (sessionTokens >= 1000) {
+                                String.format("%.1fK", sessionTokens / 1000.0)
+                            } else {
+                                "$sessionTokens"
+                            }
+                            val costText = if (sessionCost < 0.01) "< $0.01" else "$${String.format("%.2f", sessionCost)}"
+                            val tokenSuffix = if (!isLocalModel && sessionCost > 0) {
+                                " · $formattedTokens tokens · $costText"
+                            } else {
+                                " · $formattedTokens tokens"
+                            }
+                            Text(
+                                text = tokenSuffix,
+                                fontSize = 11.sp,
+                                color = tokenColor,
+                            )
+                        }
+                    }
+                }
             // Model switcher dropdown — only show configured/downloaded models
             DropdownMenu(
                 expanded = showModelMenu,
@@ -650,31 +821,76 @@ private fun MessageList(
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            scope.launch { listState.animateScrollToItem(messages.size - 1) }
+            scope.launch { 
+                listState.animateScrollToItem(
+                    messages.size - 1,
+                    scrollOffset = 0
+                )
+            }
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxWidth()
-            .pointerInput(onBackgroundTap) {
-                detectTapGestures(onTap = { onBackgroundTap() })
-            },
-        contentPadding = PaddingValues(vertical = 8.dp),
-    ) {
-        items(messages.size) { index ->
-            val message = messages[index]
-            when (message.role) {
-                ChatMessage.Role.USER -> UserBubble(message.content, message.timestamp, colors)
-                ChatMessage.Role.ASSISTANT -> AssistantBubble(message.content, message.timestamp, colors, message.modelName)
-                ChatMessage.Role.SYSTEM -> SystemMessage(message.content, colors)
-                ChatMessage.Role.TOOL_GROUP -> ToolGroup(message, colors)
+    // Parallax effect on scroll
+    val parallaxOffset by animateFloatAsState(
+        targetValue = listState.firstVisibleItemScrollOffset.toFloat() / 3f,
+        animationSpec = tween(durationMillis = 150),
+        label = "parallax"
+    )
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyColumn(
+            state = listState,
+            modifier = modifier
+                .fillMaxWidth()
+                .pointerInput(onBackgroundTap) {
+                    detectTapGestures(onTap = { onBackgroundTap() })
+                }
+                .graphicsLayer {
+                    translationY = parallaxOffset * 0.1f
+                },
+            contentPadding = PaddingValues(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            items(messages.size, key = { index -> messages[index].id ?: index }) { index ->
+                val message = messages[index]
+                AnimateItemAppearance(item = message, key = message.id ?: index) { alpha, scale ->
+                    Box(
+                        modifier = Modifier
+                            .alpha(alpha)
+                            .scale(scale)
+                            .animateContentSize(animationSpec = iosSpringSpec)
+                    ) {
+                        when (message.role) {
+                            ChatMessage.Role.USER -> UserBubble(message.content, message.timestamp, colors)
+                            ChatMessage.Role.ASSISTANT -> AssistantBubble(message.content, message.timestamp, colors, message.modelName)
+                            ChatMessage.Role.SYSTEM -> SystemMessage(message.content, colors)
+                            ChatMessage.Role.TOOL_GROUP -> ToolGroup(message, colors)
+                        }
+                    }
+                }
             }
         }
+        
+        // Gradient fade overlay at top for smooth scrolling effect
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .height(60.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            colors.background,
+                            colors.background.copy(alpha = 0.7f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
     }
 }
 
@@ -682,6 +898,8 @@ private fun MessageList(
 
 @Composable
 private fun UserBubble(text: String, timestamp: Long, colors: PokeclawColors) {
+    val haptic = LocalHapticFeedback.current
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -691,29 +909,61 @@ private fun UserBubble(text: String, timestamp: Long, colors: PokeclawColors) {
             Surface(
                 color = colors.userBubble,
                 shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    )
+                    .animateContentSize(animationSpec = iosSpringSpec),
             ) {
-                Text(
-                    text = text,
-                    color = colors.userText,
-                    fontSize = 15.sp,
-                    lineHeight = 21.sp,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                )
+                // iOS-style gradient overlay on user bubble
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    colors.userBubble.copy(alpha = 0.9f),
+                                    colors.userBubble
+                                ),
+                                begin = androidx.compose.ui.geometry.Offset.Zero,
+                                end = androidx.compose.ui.geometry.Offset.Infinite
+                            )
+                        )
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = text,
+                        color = colors.userText,
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp,
+                        fontFamily = FontFamily.SansSerif,
+                    )
+                }
             }
         }
-        Text(
-            text = formatBubbleTimestamp(timestamp),
-            fontSize = 9.sp,
-            color = colors.textTertiary,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(end = 6.dp, top = 1.dp, bottom = 2.dp),
-        )
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(200)) + slideInVertically(animationSpec = tween(200)),
+        ) {
+            Text(
+                text = formatBubbleTimestamp(timestamp),
+                fontSize = 9.sp,
+                color = colors.textTertiary,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(end = 6.dp, top = 1.dp, bottom = 2.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun AssistantBubble(text: String, timestamp: Long, colors: PokeclawColors, modelName: String? = null) {
+    val haptic = LocalHapticFeedback.current
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -723,22 +973,67 @@ private fun AssistantBubble(text: String, timestamp: Long, colors: PokeclawColor
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.Bottom,
         ) {
-            // Avatar
-            androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.pokeclaw_avatar),
-                contentDescription = "PokeClaw",
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape),
-            )
+            // Avatar with pulse animation when typing
+            AnimatedContent(
+                targetState = text == "...",
+                transitionSpec = {
+                    scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)) 
+                        togetherWith 
+                    scaleOut(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200))
+                },
+                label = "avatar"
+            ) { isTyping ->
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .then(
+                            if (isTyping) {
+                                Modifier.graphicsLayer {
+                                    scaleX = 1.05f
+                                    scaleY = 1.05f
+                                }
+                            } else Modifier
+                        )
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(R.drawable.pokeclaw_avatar),
+                        contentDescription = "PokeClaw",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                    if (isTyping) {
+                        // Pulse ring animation
+                        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                        val pulseAlpha by infiniteTransition.animateFloat(
+                            initialValue = 0.3f,
+                            targetValue = 0f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1200, easing = EaseOut),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "pulseAlpha"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(colors.accent.copy(alpha = pulseAlpha))
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.width(8.dp))
 
-            // Bubble
+            // Bubble with glassmorphism effect
             if (text == "...") {
                 Surface(
-                    color = colors.aiBubble,
+                    color = colors.aiBubble.copy(alpha = 0.9f),
                     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, colors.aiBubbleBorder),
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, colors.aiBubbleBorder.copy(alpha = 0.5f)),
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.animateContentSize(animationSpec = iosSpringSpec),
                 ) {
                     TypingIndicator(
                         color = colors.textTertiary,
@@ -747,17 +1042,40 @@ private fun AssistantBubble(text: String, timestamp: Long, colors: PokeclawColor
                 }
             } else {
                 Surface(
-                    color = colors.aiBubble,
+                    color = colors.aiBubble.copy(alpha = 0.95f),
                     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, colors.aiBubbleBorder),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier
+                        .combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                        )
+                        .animateContentSize(animationSpec = iosSpringSpec),
                 ) {
-                    Text(
-                        text = text,
-                        color = colors.aiText,
-                        fontSize = 15.sp,
-                        lineHeight = 21.sp,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                    )
+                    // Subtle gradient overlay for depth
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        colors.aiBubble.copy(alpha = 0.8f),
+                                        colors.aiBubble
+                                    )
+                                )
+                            )
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = text,
+                            color = colors.aiText,
+                            fontSize = 15.sp,
+                            lineHeight = 21.sp,
+                            fontFamily = FontFamily.SansSerif,
+                        )
+                    }
                 }
             }
         }
@@ -766,12 +1084,17 @@ private fun AssistantBubble(text: String, timestamp: Long, colors: PokeclawColor
                 modelName?.takeIf { it.isNotBlank() },
                 formatBubbleTimestamp(timestamp)
             ).joinToString(" · ")
-            Text(
-                text = footer,
-                fontSize = 9.sp,
-                color = colors.textTertiary,
-                modifier = Modifier.padding(start = 40.dp, top = 1.dp, bottom = 2.dp),
-            )
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(animationSpec = tween(200)) + slideInVertically(animationSpec = tween(200)),
+            ) {
+                Text(
+                    text = footer,
+                    fontSize = 9.sp,
+                    color = colors.textTertiary,
+                    modifier = Modifier.padding(start = 40.dp, top = 1.dp, bottom = 2.dp),
+                )
+            }
         }
     }
 }

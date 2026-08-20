@@ -47,6 +47,249 @@
 
     </androidx.cardview.widget.CardView>
 
+    <!-- iOS-style Expanded Dynamic Island (for interrupt/continue commands) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardExpanded"
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="36dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#E8F5E9"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Header with close button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/ivExpandIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/pokeclaw_icon_small"
+                    android:contentDescription="Agent Active" />
+
+                <TextView
+                    android:id="@+id/tvExpandTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="AI Agent Running"
+                    android:textColor="#1B5E20"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btnCloseExpand"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_close"
+                    app:tint="#1B5E20"
+                    android:contentDescription="Close" />
+
+            </LinearLayout>
+
+            <!-- Current task display -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Current Task:"
+                android:textColor="#558B2F"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tvCurrentTask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Processing..."
+                android:textColor="#33691E"
+                android:textSize="14sp"
+                android:maxLines="3"
+                android:ellipsize="end"
+                android:background="#C8E6C9"
+                android:padding="12dp"
+                android:backgroundTint="#C8E6C9" />
+
+            <!-- Progress indicator -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="12dp">
+
+                <ProgressBar
+                    android:id="@+id/progressExpand"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:indeterminate="true"
+                    android:indeterminateTint="#4CAF50"
+                    style="@style/Widget.AppCompat.ProgressBar" />
+
+                <TextView
+                    android:id="@+id/tvStepInfo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Step 1 | 33K tokens | $0.01"
+                    android:textColor="#558B2F"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Options Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Options:"
+                android:textColor="#558B2F"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- Option 1: Hide Dynamic Island -->
+            <LinearLayout
+                android:id="@+id/btnHideIsland"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_visibility_off"
+                    app:tint="#558B2F"
+                    android:contentDescription="Hide" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Hide Dynamic Island"
+                    android:textColor="#33691E"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- Option 2: Continue/Modify Task (Speech) -->
+            <LinearLayout
+                android:id="@+id/btnContinueSpeech"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:layout_marginTop="4dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_mic"
+                    app:tint="#558B2F"
+                    android:contentDescription="Voice" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Continue Task (Voice)"
+                    android:textColor="#33691E"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- Option 3: Continue/Modify Task (Text) -->
+            <LinearLayout
+                android:id="@+id/btnContinueText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:layout_marginTop="4dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_edit"
+                    app:tint="#558B2F"
+                    android:contentDescription="Text" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Continue Task (Text)"
+                    android:textColor="#33691E"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- Option 4: Stop Task -->
+            <LinearLayout
+                android:id="@+id/btnStopTask"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:layout_marginTop="4dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_stop"
+                    app:tint="#D32F2F"
+                    android:contentDescription="Stop" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:text="Stop Task"
+                    android:textColor="#C62828"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
     <!-- 等待任务状态（默认） — PokeClaw 圖標代替 "AI" 文字 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardIdle"

@@ -166,6 +166,22 @@ class AppViewModel : ViewModel() {
                 stopTask()
                 bringAppToForeground()
             }
+            FloatingCircleManager.onHideIsland = {
+                XLog.i(TAG, "Hide Dynamic Island requested")
+                FloatingCircleManager.hide()
+            }
+            FloatingCircleManager.onContinueWithSpeech = {
+                XLog.i(TAG, "Continue with speech requested")
+                bringAppToForeground()
+                // Trigger speech-to-text input in chat screen
+                triggerSpeechInput()
+            }
+            FloatingCircleManager.onContinueWithText = {
+                XLog.i(TAG, "Continue with text requested")
+                bringAppToForeground()
+                // Focus on chat input field
+                focusChatInput()
+            }
         } catch (e: Exception) {
             XLog.e(TAG, "Failed to show floating circle: ${e.message}")
         }
@@ -181,6 +197,38 @@ class AppViewModel : ViewModel() {
                     android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         context.startActivity(intent)
+    }
+    
+    /**
+     * Trigger speech-to-text input in chat screen
+     */
+    private fun triggerSpeechInput() {
+        // Broadcast event to chat activity to open speech input
+        val context = ClawApplication.instance
+        val intent = android.content.Intent("io.agents.pokeclaw.TRIGGER_SPEECH_INPUT").apply {
+            flags = android.content.Intent.FLAG_RECEIVER_FOREGROUND
+        }
+        try {
+            context.sendBroadcast(intent)
+        } catch (e: Exception) {
+            XLog.e(TAG, "Failed to trigger speech input: ${e.message}")
+        }
+    }
+    
+    /**
+     * Focus on chat input field
+     */
+    private fun focusChatInput() {
+        // Broadcast event to chat activity to focus input field
+        val context = ClawApplication.instance
+        val intent = android.content.Intent("io.agents.pokeclaw.FOCUS_CHAT_INPUT").apply {
+            flags = android.content.Intent.FLAG_RECEIVER_FOREGROUND
+        }
+        try {
+            context.sendBroadcast(intent)
+        } catch (e: Exception) {
+            XLog.e(TAG, "Failed to focus chat input: ${e.message}")
+        }
     }
 
     // Old pass-through methods removed — use startTask/stopTask/isTaskRunning/clearTaskCallback instead
